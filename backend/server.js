@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const abyssService = require('./abyssService'); // CHANGED: From streamtapeService
+const abyssService = require('./abyssService');
 const db = require('./database');
 
 const app = express();
@@ -198,19 +198,41 @@ app.post('/api/videos/upload', upload.fields([
 
     console.log('Upload successful:', uploadResult);
 
-    // Prepare thumbnail URL
+    // Prepare thumbnail URL (Abyss auto thumbnail)
     let thumbnailUrl = abyssService.getThumbnailUrl(uploadResult.file_id);
 
     // Custom thumbnail handling
     if (thumbnailFile) {
       console.log('Custom thumbnail provided:', thumbnailFile.originalname);
       console.warn('Custom thumbnails not persisted (ephemeral storage). Consider using CDN.');
-      // TODO: Upload to CDN (Cloudinary, S3, etc.)
+    }
+
+    // ==================== EMBED CODE FIX ====================
+
+    // Abyss embed uses short.icu
+    let embedUrl =
+      uploadResult.embed_url ||
+      uploadResult.url ||
+      uploadResult.link ||
+      uploadResult.short_url ||
+      null;
+
+    let embedCode = null;
+
+    // If we got a short.icu URL, extract the code
+    if (embedUrl && embedUrl.includes("short.icu/")) {
+      embedCode = embedUrl.split("short.icu/")[1].trim();
+    }
+
+    // If no embedCode found, fallback to file_id (still stored)
+    if (!embedCode) {
+      embedCode = uploadResult.file_id;
     }
 
     // Save to database
     const video = db.addVideo({
-      file_code: uploadResult.file_id, // Using file_code for compatibility
+      file_code: uploadResult.file_id,  // Abyss real file_id
+      embed_code: embedCode,            // short.icu code for iframe playback
       title: title,
       thumbnail: thumbnailUrl,
       duration: duration || '0:00',
@@ -274,12 +296,12 @@ app.post('/api/videos/add', async (req, res) => {
       console.log('File verified on Abyss.to:', fileInfo);
     } catch (error) {
       console.warn('Could not verify file on Abyss.to:', error.message);
-      // Continue anyway - file might exist but API call failed
     }
 
     // Save to database
     const video = db.addVideo({
       file_code: file_code,
+      embed_code: file_code, // if user manually pastes short.icu code, it will still work
       title: title,
       thumbnail: abyssService.getThumbnailUrl(file_code),
       duration: duration || '0:00'
@@ -341,9 +363,12 @@ app.get('/api/videos/:id/embed', (req, res) => {
       });
     }
 
+    // Use embed_code if exists, otherwise fallback to file_code
+    const embedUrl = `https://short.icu/${video.embed_code || video.file_code}`;
+
     res.json({
       success: true,
-      embed_url: abyssService.getEmbedUrl(video.file_code)
+      embed_url: embedUrl
     });
   } catch (error) {
     console.error('Error getting embed URL:', error);
@@ -379,7 +404,6 @@ app.listen(PORT, () => {
     console.error('⚠️  WARNING: ABYSS_API_KEY not set! Video uploads will fail.');
   }
 
-  // Seed database with sample data (only in development)
   if (process.env.NODE_ENV !== 'production') {
     console.log('Seeding database with sample data...');
     db.seedData();
