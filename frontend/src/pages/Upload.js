@@ -17,6 +17,9 @@ const Upload = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
+  // ADMIN PASSWORD STATE ✅
+  const [adminPassword, setAdminPassword] = useState('');
+
   // Metadata state
   const [duration, setDuration] = useState('');
   const [durationDetected, setDurationDetected] = useState(false);
@@ -55,7 +58,6 @@ const Upload = () => {
         video.src = objectUrl;
 
         video.onloadedmetadata = () => {
-          // Auto-detect duration
           const videoDuration = video.duration;
           if (videoDuration && !isNaN(videoDuration)) {
             const formattedDuration = formatDuration(videoDuration);
@@ -66,14 +68,12 @@ const Upload = () => {
 
         video.onseeked = () => {
           try {
-            // Set canvas dimensions to match video
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Convert canvas to blob
             canvas.toBlob((blob) => {
               if (blob) {
                 const thumbnailFile = new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' });
@@ -100,7 +100,6 @@ const Upload = () => {
           reject(new Error('Failed to load video'));
         };
 
-        // Seek to 1 second or 10% of video duration for thumbnail
         video.onloadeddata = () => {
           const seekTime = Math.min(1, video.duration * 0.1);
           video.currentTime = seekTime;
@@ -119,13 +118,11 @@ const Upload = () => {
     if (selectedFile) {
       setFile(selectedFile);
 
-      // Auto-set title from filename
       if (!title) {
         const fileName = selectedFile.name.replace(/\.[^/.]+$/, '');
         setTitle(fileName);
       }
 
-      // Reset previous metadata
       setThumbnail(null);
       setThumbnailPreview(null);
       setThumbnailSource(null);
@@ -133,7 +130,6 @@ const Upload = () => {
       setDurationDetected(false);
       setError(null);
 
-      // Try to generate thumbnail and detect duration
       setProcessingMetadata(true);
 
       try {
@@ -152,7 +148,6 @@ const Upload = () => {
     const thumbnailFile = e.target.files[0];
 
     if (thumbnailFile) {
-      // Validate file type
       if (!thumbnailFile.type.match(/image\/(jpeg|jpg|png|webp)/)) {
         setError('Thumbnail must be JPG, PNG, or WebP');
         return;
@@ -166,7 +161,7 @@ const Upload = () => {
     }
   };
 
-  // Handle duration input change (FIXED: only one function now)
+  // Handle duration input change
   const handleDurationChange = (e) => {
     const value = e.target.value;
     setDuration(value);
@@ -184,6 +179,12 @@ const Upload = () => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
+
+    // ✅ ADMIN PASSWORD REQUIRED
+    if (!adminPassword.trim()) {
+      setError("Admin password is required!");
+      return;
+    }
 
     // Validation
     if (!title.trim()) {
@@ -210,9 +211,9 @@ const Upload = () => {
       setUploading(true);
 
       if (uploadMode === 'file') {
-        await videoService.uploadVideo(file, title, duration || "0:00", thumbnail);
+        await videoService.uploadVideo(file, title, duration || "0:00", thumbnail, adminPassword);
       } else {
-        await videoService.addVideoByCode(fileCode, title, duration || "0:00");
+        await videoService.addVideoByCode(fileCode, title, duration || "0:00", adminPassword);
       }
 
       setSuccess(true);
@@ -239,12 +240,27 @@ const Upload = () => {
 
   return (
     <div className="upload-container">
-      {/* Hidden video and canvas for thumbnail generation */}
       <video ref={videoRef} style={{ display: 'none' }} />
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       <div className="upload-card">
         <h1>Upload Video</h1>
+
+        {/* ✅ ADMIN PASSWORD INPUT */}
+        <div className="form-group">
+          <label>Admin Password *</label>
+          <input
+            type="password"
+            value={adminPassword}
+            onChange={(e) => setAdminPassword(e.target.value)}
+            placeholder="Enter admin password"
+            disabled={uploading}
+            required
+          />
+          <p className="help-text">
+            Only admin can upload videos. Password is required.
+          </p>
+        </div>
 
         <div className="upload-mode-toggle">
           <button
@@ -308,7 +324,6 @@ const Upload = () => {
                 </p>
               </div>
 
-              {/* Processing indicator */}
               {processingMetadata && (
                 <div className="metadata-processing">
                   <span className="spinner-small"></span>
@@ -316,7 +331,6 @@ const Upload = () => {
                 </div>
               )}
 
-              {/* Thumbnail Section */}
               {file && !processingMetadata && (
                 <div className="form-group">
                   <label>Thumbnail</label>
@@ -334,12 +348,6 @@ const Upload = () => {
                   {(!thumbnail || thumbnailSource === 'default') && (
                     <div className="thumbnail-fallback">
                       <div className="thumbnail-placeholder">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
-                          <path
-                            d="M21 3H3C1.9 3 1 3.9 1 5V19C1 20.1 1.9 21 3 21H21C22.1 21 23 20.1 23 19V5C23 3.9 22.1 3 21 3ZM21 19H3V5H21V19ZM10 14.5L13.5 17.5L18 12L21 16H3L10 14.5Z"
-                            fill="#666"
-                          />
-                        </svg>
                         <p>No thumbnail generated</p>
                       </div>
                     </div>
@@ -366,7 +374,6 @@ const Upload = () => {
                 </div>
               )}
 
-              {/* Duration Section */}
               <div className="form-group">
                 <label htmlFor="duration">
                   Duration {durationDetected && '(auto-detected)'}
@@ -383,7 +390,7 @@ const Upload = () => {
                 />
 
                 <p className="help-text">
-                  Format: mm:ss or hh:mm:ss (e.g., 5:30 or 1:23:45) - Editable
+                  Format: mm:ss or hh:mm:ss (e.g., 5:30 or 1:23:45)
                 </p>
               </div>
             </>

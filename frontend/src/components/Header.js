@@ -23,13 +23,14 @@ const Header = () => {
           </svg>
           <h1>VideoStream</h1>
         </div>
+
         <nav className="nav-links">
           <button onClick={() => navigate('/')} className="nav-button">
             Home
           </button>
-          <button onClick={() => navigate('/upload')} className="nav-button upload-btn">
-            Upload
-          </button>
+
+          {/* ✅ Upload button removed for security */}
+          {/* You can still access upload page manually by typing /upload */}
         </nav>
       </div>
     </header>

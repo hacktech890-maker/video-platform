@@ -36,14 +36,14 @@ class VideoService {
     }
   }
 
-  // Upload video with metadata
-  async uploadVideo(file, title, duration = '', thumbnail = null) {
+  // Upload video with metadata (ADMIN PASSWORD REQUIRED)
+  async uploadVideo(file, title, duration = '', thumbnail = null, adminPassword) {
     try {
       const formData = new FormData();
       formData.append('video', file);
       formData.append('title', title);
 
-      // Always send duration (fix undefined issue)
+      // Always send duration
       formData.append('duration', duration || "0:00");
 
       if (thumbnail) {
@@ -53,6 +53,7 @@ class VideoService {
       const response = await api.post('/videos/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'x-admin-password': adminPassword, // ✅ REQUIRED
         },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round(
@@ -70,14 +71,22 @@ class VideoService {
     }
   }
 
-  // Add video by file_code (Abyss.to file ID)
-  async addVideoByCode(fileCode, title, duration = '') {
+  // Add video by file_code (ADMIN PASSWORD REQUIRED)
+  async addVideoByCode(fileCode, title, duration = '', adminPassword) {
     try {
-      const response = await api.post('/videos/add', {
-        file_code: fileCode,
-        title: title,
-        duration: duration || "0:00",
-      });
+      const response = await api.post('/videos/add',
+        {
+          file_code: fileCode,
+          title: title,
+          duration: duration || "0:00",
+        },
+        {
+          headers: {
+            'x-admin-password': adminPassword, // ✅ REQUIRED
+          }
+        }
+      );
+
       return response.data;
     } catch (error) {
       console.error('Error adding video:', error);
@@ -107,12 +116,12 @@ class VideoService {
     }
   }
 
-  // Generate embed URL from file_code (client-side, no API call needed)
-  getEmbedUrlFromCode(fileCode) {
-    return `https://abyss.to/embed/${fileCode}`;
+  // Generate embed URL from embed_code (short.icu system)
+  getEmbedUrlFromCode(embedCode) {
+    return `https://short.icu/${embedCode}`;
   }
 }
 
-// ✅ FIX: no anonymous export (Netlify ESLint fix)
+// ✅ FIX: no anonymous export
 const videoService = new VideoService();
 export default videoService;
