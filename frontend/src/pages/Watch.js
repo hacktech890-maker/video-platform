@@ -12,7 +12,7 @@ const Watch = () => {
 
   useEffect(() => {
     fetchVideo();
-    
+
     // Load your ad script
     const script = document.createElement('script');
     script.src = 'https://pl28635101.effectivegatecpm.com/ae/10/47/ae1047454b116c143b22ba661108cf77.js';
@@ -35,6 +35,8 @@ const Watch = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "Unknown";
+
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -67,6 +69,7 @@ const Watch = () => {
     );
   }
 
+  // Abyss embed url
   const embedUrl = videoService.getEmbedUrlFromCode(video.file_code);
 
   return (
@@ -86,7 +89,7 @@ const Watch = () => {
 
         <div className="video-details">
           <h1 className="video-title">{video.title}</h1>
-          
+
           <div className="video-stats">
             <span className="stat-item">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -97,6 +100,7 @@ const Watch = () => {
               </svg>
               {video.views || 0} views
             </span>
+
             <span className="stat-item">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path
@@ -109,10 +113,8 @@ const Watch = () => {
           </div>
 
           <div className="video-description">
-            <p>File ID: {video.file_code}</p>
-            {video.duration && video.duration !== '0:00' && (
-              <p>Duration: {video.duration}</p>
-            )}
+            <p><b>File ID:</b> {video.file_code}</p>
+            <p><b>Duration:</b> {video.duration || "0:00"}</p>
           </div>
         </div>
 
@@ -128,20 +130,12 @@ const Watch = () => {
         <div className="ad-sticky">
           <div className="ad-container">
             <div className="ad-label">Advertisement</div>
-            {/* 
-              PASTE YOUR AD CODE HERE 
-              Examples:
-              - Google AdSense
-              - Affiliate banners
-              - Video-related ads
-            */}
+
             <div className="ad-placeholder">
-              {/* Replace this div with actual ad code */}
               <p>300x600 Ad Space</p>
             </div>
           </div>
 
-          {/* OPTIONAL: Second ad unit */}
           <div className="ad-container" style={{ marginTop: '24px' }}>
             <div className="ad-label">Advertisement</div>
             <div className="ad-placeholder" style={{ height: '250px' }}>

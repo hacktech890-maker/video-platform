@@ -7,7 +7,7 @@ const Upload = () => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  
+
   // Form state
   const [title, setTitle] = useState('');
   const [file, setFile] = useState(null);
@@ -16,7 +16,7 @@ const Upload = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  
+
   // Metadata state
   const [duration, setDuration] = useState('');
   const [durationDetected, setDurationDetected] = useState(false);
@@ -28,11 +28,11 @@ const Upload = () => {
   // Format duration in seconds to mm:ss or hh:mm:ss
   const formatDuration = (seconds) => {
     if (!seconds || isNaN(seconds)) return '';
-    
+
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    
+
     if (hrs > 0) {
       return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -45,7 +45,7 @@ const Upload = () => {
       try {
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        
+
         if (!video || !canvas) {
           reject(new Error('Video or canvas element not available'));
           return;
@@ -53,7 +53,7 @@ const Upload = () => {
 
         const objectUrl = URL.createObjectURL(videoFile);
         video.src = objectUrl;
-        
+
         video.onloadedmetadata = () => {
           // Auto-detect duration
           const videoDuration = video.duration;
@@ -69,20 +69,20 @@ const Upload = () => {
             // Set canvas dimensions to match video
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            
+
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
+
             // Convert canvas to blob
             canvas.toBlob((blob) => {
               if (blob) {
                 const thumbnailFile = new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' });
                 const previewUrl = URL.createObjectURL(blob);
-                
+
                 setThumbnail(thumbnailFile);
                 setThumbnailPreview(previewUrl);
                 setThumbnailSource('auto');
-                
+
                 URL.revokeObjectURL(objectUrl);
                 resolve(thumbnailFile);
               } else {
@@ -105,7 +105,6 @@ const Upload = () => {
           const seekTime = Math.min(1, video.duration * 0.1);
           video.currentTime = seekTime;
         };
-        
       } catch (err) {
         console.error('Error generating thumbnail:', err);
         reject(err);
@@ -116,15 +115,16 @@ const Upload = () => {
   // Handle video file selection
   const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
+
     if (selectedFile) {
       setFile(selectedFile);
-      
+
       // Auto-set title from filename
       if (!title) {
         const fileName = selectedFile.name.replace(/\.[^/.]+$/, '');
         setTitle(fileName);
       }
-      
+
       // Reset previous metadata
       setThumbnail(null);
       setThumbnailPreview(null);
@@ -132,14 +132,14 @@ const Upload = () => {
       setDuration('');
       setDurationDetected(false);
       setError(null);
-      
+
       // Try to generate thumbnail and detect duration
       setProcessingMetadata(true);
+
       try {
         await generateThumbnail(selectedFile);
       } catch (err) {
         console.warn('Auto thumbnail generation failed:', err.message);
-        // Silently fail - user can upload manually
         setThumbnailSource('default');
       } finally {
         setProcessingMetadata(false);
@@ -150,13 +150,14 @@ const Upload = () => {
   // Handle manual thumbnail upload
   const handleThumbnailChange = (e) => {
     const thumbnailFile = e.target.files[0];
+
     if (thumbnailFile) {
       // Validate file type
       if (!thumbnailFile.type.match(/image\/(jpeg|jpg|png|webp)/)) {
         setError('Thumbnail must be JPG, PNG, or WebP');
         return;
       }
-      
+
       const previewUrl = URL.createObjectURL(thumbnailFile);
       setThumbnail(thumbnailFile);
       setThumbnailPreview(previewUrl);
@@ -165,25 +166,16 @@ const Upload = () => {
     }
   };
 
-  // Handle duration input change
+  // Handle duration input change (FIXED: only one function now)
   const handleDurationChange = (e) => {
     const value = e.target.value;
-    // Allow manual editing even if auto-detected
     setDuration(value);
-    setDurationDetected(false); // Mark as manually edited
-  };
-
-  // Handle duration input change
-  const handleDurationChange = (e) => {
-    const value = e.target.value;
-    // Allow manual editing even if auto-detected
-    setDuration(value);
-    setDurationDetected(false); // Mark as manually edited
+    setDurationDetected(false);
   };
 
   // Validate duration format
   const validateDuration = (dur) => {
-    if (!dur) return true; // Optional field
+    if (!dur) return true;
     const pattern = /^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/;
     return pattern.test(dur);
   };
@@ -205,7 +197,7 @@ const Upload = () => {
     }
 
     if (uploadMode === 'code' && !fileCode.trim()) {
-      setError('Please enter a Streamtape file code');
+      setError('Please enter an Abyss file code');
       return;
     }
 
@@ -218,12 +210,13 @@ const Upload = () => {
       setUploading(true);
 
       if (uploadMode === 'file') {
-        await videoService.uploadVideo(file, title, duration, thumbnail);
+        await videoService.uploadVideo(file, title, duration || "0:00", thumbnail);
       } else {
-        await videoService.addVideoByCode(fileCode, title, duration);
+        await videoService.addVideoByCode(fileCode, title, duration || "0:00");
       }
 
       setSuccess(true);
+
       setTimeout(() => {
         navigate('/');
       }, 2000);
@@ -258,13 +251,16 @@ const Upload = () => {
             className={`mode-button ${uploadMode === 'file' ? 'active' : ''}`}
             onClick={() => setUploadMode('file')}
             disabled={uploading}
+            type="button"
           >
             Upload File
           </button>
+
           <button
             className={`mode-button ${uploadMode === 'code' ? 'active' : ''}`}
             onClick={() => setUploadMode('code')}
             disabled={uploading}
+            type="button"
           >
             Add by Code
           </button>
@@ -288,6 +284,7 @@ const Upload = () => {
             <>
               <div className="form-group">
                 <label htmlFor="video">Select Video File *</label>
+
                 <div className="file-input-wrapper">
                   <input
                     type="file"
@@ -297,6 +294,7 @@ const Upload = () => {
                     disabled={uploading}
                     required
                   />
+
                   {file && (
                     <div className="file-info">
                       <p>Selected: {file.name}</p>
@@ -304,6 +302,7 @@ const Upload = () => {
                     </div>
                   )}
                 </div>
+
                 <p className="help-text">
                   Supported formats: MP4, AVI, MKV, MOV, WMV, FLV, WebM
                 </p>
@@ -321,7 +320,7 @@ const Upload = () => {
               {file && !processingMetadata && (
                 <div className="form-group">
                   <label>Thumbnail</label>
-                  
+
                   {thumbnailPreview && (
                     <div className="thumbnail-preview">
                       <img src={thumbnailPreview} alt="Video thumbnail" />
@@ -350,6 +349,7 @@ const Upload = () => {
                     <label htmlFor="thumbnail" className="thumbnail-upload-label">
                       📷 {thumbnail ? 'Change Thumbnail' : 'Upload Thumbnail Manually'}
                     </label>
+
                     <input
                       type="file"
                       id="thumbnail"
@@ -359,6 +359,7 @@ const Upload = () => {
                       className="thumbnail-input"
                     />
                   </div>
+
                   <p className="help-text">
                     Optional: Upload JPG, PNG, or WebP (recommended 16:9 ratio)
                   </p>
@@ -370,6 +371,7 @@ const Upload = () => {
                 <label htmlFor="duration">
                   Duration {durationDetected && '(auto-detected)'}
                 </label>
+
                 <input
                   type="text"
                   id="duration"
@@ -379,6 +381,7 @@ const Upload = () => {
                   disabled={uploading}
                   className={durationDetected ? 'auto-filled' : ''}
                 />
+
                 <p className="help-text">
                   Format: mm:ss or hh:mm:ss (e.g., 5:30 or 1:23:45) - Editable
                 </p>
@@ -387,7 +390,8 @@ const Upload = () => {
           ) : (
             <>
               <div className="form-group">
-                <label htmlFor="fileCode">Streamtape File Code *</label>
+                <label htmlFor="fileCode">Abyss File Code *</label>
+
                 <input
                   type="text"
                   id="fileCode"
@@ -397,13 +401,15 @@ const Upload = () => {
                   disabled={uploading}
                   required
                 />
+
                 <p className="help-text">
-                  Enter the file code from an existing Streamtape video
+                  Enter the file code from an existing Abyss.to video
                 </p>
               </div>
 
               <div className="form-group">
                 <label htmlFor="duration">Duration (optional)</label>
+
                 <input
                   type="text"
                   id="duration"
@@ -412,6 +418,7 @@ const Upload = () => {
                   placeholder="mm:ss or hh:mm:ss"
                   disabled={uploading}
                 />
+
                 <p className="help-text">
                   Format: mm:ss or hh:mm:ss (e.g., 5:30 or 1:23:45)
                 </p>
@@ -440,6 +447,7 @@ const Upload = () => {
             >
               Cancel
             </button>
+
             <button
               type="submit"
               className="submit-button"
