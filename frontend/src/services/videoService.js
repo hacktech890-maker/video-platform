@@ -42,11 +42,10 @@ class VideoService {
       const formData = new FormData();
       formData.append('video', file);
       formData.append('title', title);
-      
-      if (duration) {
-        formData.append('duration', duration);
-      }
-      
+
+      // Always send duration (fix undefined issue)
+      formData.append('duration', duration || "0:00");
+
       if (thumbnail) {
         formData.append('thumbnail', thumbnail);
       }
@@ -56,7 +55,9 @@ class VideoService {
           'Content-Type': 'multipart/form-data',
         },
         onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
           console.log(`Upload progress: ${percentCompleted}%`);
         },
         timeout: 600000, // 10 minutes
@@ -75,7 +76,7 @@ class VideoService {
       const response = await api.post('/videos/add', {
         file_code: fileCode,
         title: title,
-        duration: duration || undefined,
+        duration: duration || "0:00",
       });
       return response.data;
     } catch (error) {
@@ -107,10 +108,11 @@ class VideoService {
   }
 
   // Generate embed URL from file_code (client-side, no API call needed)
-  // CHANGED: Updated for Abyss.to embed format
   getEmbedUrlFromCode(fileCode) {
     return `https://abyss.to/embed/${fileCode}`;
   }
 }
 
-export default new VideoService();
+// ✅ FIX: no anonymous export (Netlify ESLint fix)
+const videoService = new VideoService();
+export default videoService;
