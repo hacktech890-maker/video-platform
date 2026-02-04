@@ -13,6 +13,21 @@ const db = require('./database');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ==================== ADMIN SECURITY ====================
+
+function requireAdmin(req, res, next) {
+  const adminPass = req.headers["x-admin-password"];
+
+  if (!adminPass || adminPass !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized! Admin password required.",
+    });
+  }
+
+  next();
+}
+
 // ==================== CORS CONFIG ====================
 
 // PRODUCTION CORS - Allow multiple origins
@@ -30,7 +45,6 @@ app.use(cors({
     }
 
     // Allow ALL Netlify preview deploy URLs
-    // Example: https://randomhash--yourapp.netlify.app
     if (origin.endsWith(".netlify.app")) {
       return callback(null, true);
     }
@@ -163,8 +177,8 @@ app.get('/api/videos/:id', (req, res) => {
   }
 });
 
-// POST /api/videos/upload - Upload video to Abyss.to
-app.post('/api/videos/upload', upload.fields([
+// POST /api/videos/upload - Upload video to Abyss.to (ADMIN ONLY)
+app.post('/api/videos/upload', requireAdmin, upload.fields([
   { name: 'video', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 }
 ]), async (req, res) => {
@@ -284,8 +298,8 @@ app.post('/api/videos/upload', upload.fields([
   }
 });
 
-// POST /api/videos/add - Add existing Abyss.to video by file ID
-app.post('/api/videos/add', async (req, res) => {
+// POST /api/videos/add - Add existing Abyss.to video by file ID (ADMIN ONLY)
+app.post('/api/videos/add', requireAdmin, async (req, res) => {
   try {
     const { file_code, title, duration } = req.body;
 
@@ -418,6 +432,10 @@ app.listen(PORT, () => {
 
   if (!process.env.CLOUDINARY_CLOUD_NAME) {
     console.error('⚠️ WARNING: CLOUDINARY ENV VARIABLES NOT SET!');
+  }
+
+  if (!process.env.ADMIN_PASSWORD) {
+    console.error('⚠️ WARNING: ADMIN_PASSWORD not set! Upload will always fail.');
   }
 
   if (process.env.NODE_ENV !== 'production') {
