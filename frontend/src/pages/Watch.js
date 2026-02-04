@@ -76,7 +76,7 @@ const Watch = () => {
     );
   }
 
-  const embedUrl = videoService.getEmbedUrlFromCode(video.file_code);
+const embedUrl = `https://short.icu/${video.embed_code || video.file_code}`;
 
   return (
     <div className="watch-page-layout">
