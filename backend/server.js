@@ -1,13 +1,12 @@
-const cloudinary = require("./cloudinaryConfig");
-
-
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+const cloudinary = require("./cloudinaryConfig");
 const abyssService = require('./abyssService');
 const db = require('./database');
 
@@ -201,23 +200,23 @@ app.post('/api/videos/upload', upload.fields([
 
     console.log('Upload successful:', uploadResult);
 
-    // Prepare thumbnail URL (Abyss auto thumbnail)
+    // Default thumbnail from Abyss (fallback)
     let thumbnailUrl = abyssService.getThumbnailUrl(uploadResult.file_id);
 
-// Custom thumbnail handling (Upload to Cloudinary)
-if (thumbnailFile) {
-  console.log("Uploading thumbnail to Cloudinary...");
+    // ==================== CLOUDINARY THUMBNAIL UPLOAD ====================
 
-  const uploadThumb = await cloudinary.uploader.upload(thumbnailFile.path, {
-    folder: "video-thumbnails",
-    resource_type: "image",
-  });
+    if (thumbnailFile) {
+      console.log("Uploading thumbnail to Cloudinary...");
 
-  console.log("Thumbnail uploaded:", uploadThumb.secure_url);
+      const uploadThumb = await cloudinary.uploader.upload(thumbnailFile.path, {
+        folder: "video-thumbnails",
+        resource_type: "image",
+      });
 
-  thumbnailUrl = uploadThumb.secure_url;
-}
+      console.log("Thumbnail uploaded:", uploadThumb.secure_url);
 
+      thumbnailUrl = uploadThumb.secure_url;
+    }
 
     // ==================== EMBED CODE FIX ====================
 
@@ -231,29 +230,33 @@ if (thumbnailFile) {
 
     let embedCode = null;
 
-    // If we got a short.icu URL, extract the code
+    // Extract code from short.icu URL
     if (embedUrl && embedUrl.includes("short.icu/")) {
       embedCode = embedUrl.split("short.icu/")[1].trim();
     }
 
-    // If no embedCode found, fallback to file_id (still stored)
+    // If no embedCode found, fallback to file_id
     if (!embedCode) {
       embedCode = uploadResult.file_id;
     }
 
     // Save to database
     const video = db.addVideo({
-      file_code: uploadResult.file_id,  // Abyss real file_id
-      embed_code: embedCode,            // short.icu code for iframe playback
+      file_code: uploadResult.file_id,
+      embed_code: embedCode,
       title: title,
       thumbnail: thumbnailUrl,
       duration: duration || '0:00',
       status: uploadResult.status || 'processing'
     });
 
-    // Clean up local files
+    // ==================== CLEAN UP LOCAL FILES ====================
+
     fs.unlinkSync(videoFile.path);
-    if (thumbnailFile) fs.unlinkSync(thumbnailFile.path);
+
+    if (thumbnailFile && fs.existsSync(thumbnailFile.path)) {
+      fs.unlinkSync(thumbnailFile.path);
+    }
 
     res.json({
       success: true,
@@ -313,7 +316,7 @@ app.post('/api/videos/add', async (req, res) => {
     // Save to database
     const video = db.addVideo({
       file_code: file_code,
-      embed_code: file_code, // if user manually pastes short.icu code, it will still work
+      embed_code: file_code,
       title: title,
       thumbnail: abyssService.getThumbnailUrl(file_code),
       duration: duration || '0:00'
@@ -346,7 +349,6 @@ app.delete('/api/videos/:id', async (req, res) => {
       });
     }
 
-    // Delete from database
     db.deleteVideo(req.params.id);
 
     res.json({
@@ -375,7 +377,6 @@ app.get('/api/videos/:id/embed', (req, res) => {
       });
     }
 
-    // Use embed_code if exists, otherwise fallback to file_code
     const embedUrl = `https://short.icu/${video.embed_code || video.file_code}`;
 
     res.json({
@@ -411,9 +412,12 @@ app.listen(PORT, () => {
   console.log(`Video hosting: Abyss.to`);
   console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 
-  // Check Abyss.to API key
   if (!process.env.ABYSS_API_KEY) {
-    console.error('⚠️  WARNING: ABYSS_API_KEY not set! Video uploads will fail.');
+    console.error('⚠️ WARNING: ABYSS_API_KEY not set! Video uploads will fail.');
+  }
+
+  if (!process.env.CLOUDINARY_CLOUD_NAME) {
+    console.error('⚠️ WARNING: CLOUDINARY ENV VARIABLES NOT SET!');
   }
 
   if (process.env.NODE_ENV !== 'production') {
