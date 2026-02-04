@@ -1,3 +1,6 @@
+const cloudinary = require("./cloudinaryConfig");
+
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -201,11 +204,20 @@ app.post('/api/videos/upload', upload.fields([
     // Prepare thumbnail URL (Abyss auto thumbnail)
     let thumbnailUrl = abyssService.getThumbnailUrl(uploadResult.file_id);
 
-    // Custom thumbnail handling
-    if (thumbnailFile) {
-      console.log('Custom thumbnail provided:', thumbnailFile.originalname);
-      console.warn('Custom thumbnails not persisted (ephemeral storage). Consider using CDN.');
-    }
+// Custom thumbnail handling (Upload to Cloudinary)
+if (thumbnailFile) {
+  console.log("Uploading thumbnail to Cloudinary...");
+
+  const uploadThumb = await cloudinary.uploader.upload(thumbnailFile.path, {
+    folder: "video-thumbnails",
+    resource_type: "image",
+  });
+
+  console.log("Thumbnail uploaded:", uploadThumb.secure_url);
+
+  thumbnailUrl = uploadThumb.secure_url;
+}
+
 
     // ==================== EMBED CODE FIX ====================
 
