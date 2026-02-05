@@ -82,22 +82,27 @@
   cursor: not-allowed;
 }
 
+/* ========================= */
 /* Video Info */
+/* ========================= */
+
 .video-info {
   padding: 12px 8px;
 }
 
+/* ✅ FIXED TITLE CLAMP WITHOUT WEBKIT LINE CLAMP */
 .video-title {
   font-size: 16px;
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 8px;
   line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+
   overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
+
+  max-height: 2.8em; /* 2 lines (1.4 * 2) */
 }
 
 .video-metadata {
@@ -137,10 +142,14 @@
   word-break: break-word;
 }
 
+/* ========================= */
 /* Responsive */
+/* ========================= */
+
 @media (max-width: 768px) {
   .video-title {
     font-size: 14px;
+    max-height: 2.8em;
   }
 
   .video-metadata {
