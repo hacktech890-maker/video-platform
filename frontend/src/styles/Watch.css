@@ -44,7 +44,7 @@
 
 .video-title {
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 800;
   color: #ffffff;
   margin-bottom: 16px;
   line-height: 1.4;
@@ -80,6 +80,110 @@
   margin-bottom: 8px;
 }
 
+/* ========================= */
+/* ✅ ADMIN ACTIONS SECTION */
+/* ========================= */
+
+.watch-admin-actions {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #272727;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-status-text {
+  font-size: 13px;
+  font-weight: 800;
+  color: #51cf66;
+  background: rgba(81, 207, 102, 0.1);
+  border: 1px solid rgba(81, 207, 102, 0.25);
+  padding: 8px 12px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.delete-video-btn {
+  background: rgba(255, 0, 0, 0.9);
+  color: #ffffff;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  width: fit-content;
+}
+
+.delete-video-btn:hover:not(:disabled) {
+  background: rgba(200, 0, 0, 0.95);
+  transform: translateY(-2px);
+}
+
+.delete-video-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.logout-video-btn {
+  background: #272727;
+  color: #ffffff;
+  border: 1px solid #333;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  width: fit-content;
+}
+
+.logout-video-btn:hover:not(:disabled) {
+  background: #3a3a3a;
+}
+
+.admin-login-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-login-box input {
+  flex: 1;
+  min-width: 200px;
+  background: #0f0f0f;
+  border: 1px solid #333;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.admin-login-box input:focus {
+  outline: none;
+  border-color: #ff0000;
+}
+
+.admin-login-box button {
+  background: #ff0000;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.admin-login-box button:hover {
+  background: #cc0000;
+}
+
+/* BACK BUTTON */
 .back-navigation {
   display: flex;
   justify-content: center;
@@ -189,11 +293,11 @@
   .watch-page-layout {
     padding: 20px;
   }
-  
+
   .watch-ad-sidebar {
     display: none;
   }
-  
+
   .watch-content-main {
     order: 1;
   }
@@ -228,5 +332,23 @@
 
   .stat-item {
     font-size: 13px;
+  }
+
+  .admin-login-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-login-box input {
+    width: 100%;
+  }
+
+  .admin-login-box button {
+    width: 100%;
+  }
+
+  .delete-video-btn,
+  .logout-video-btn {
+    width: 100%;
   }
 }

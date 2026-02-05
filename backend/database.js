@@ -12,13 +12,17 @@ class VideoDatabase {
     const video = {
       id: this.nextId++,
       file_code: videoData.file_code,
+      embed_code: videoData.embed_code || videoData.file_code, // ✅ IMPORTANT
       title: videoData.title,
-      thumbnail: videoData.thumbnail || `https://streamtape.com/thumb/${videoData.file_code}.jpg`,
+      thumbnail:
+        videoData.thumbnail ||
+        `https://img.abysscdn.com/${videoData.file_code}.jpg`, // ✅ Abyss fallback
       upload_date: new Date().toISOString(),
       views: 0,
-      duration: videoData.duration || '0:00'
+      duration: videoData.duration || "0:00",
+      status: videoData.status || "active",
     };
-    
+
     this.videos.unshift(video); // Add to beginning (newest first)
     return video;
   }
@@ -30,12 +34,12 @@ class VideoDatabase {
 
   // Get video by ID
   getVideoById(id) {
-    return this.videos.find(video => video.id === parseInt(id));
+    return this.videos.find((video) => video.id === parseInt(id));
   }
 
   // Get video by file_code
   getVideoByFileCode(fileCode) {
-    return this.videos.find(video => video.file_code === fileCode);
+    return this.videos.find((video) => video.file_code === fileCode);
   }
 
   // Update video views
@@ -50,7 +54,7 @@ class VideoDatabase {
 
   // Delete video
   deleteVideo(id) {
-    const index = this.videos.findIndex(video => video.id === parseInt(id));
+    const index = this.videos.findIndex((video) => video.id === parseInt(id));
     if (index !== -1) {
       return this.videos.splice(index, 1)[0];
     }
@@ -59,26 +63,31 @@ class VideoDatabase {
 
   // Seed with sample data for testing
   seedData() {
-    // Add sample videos (these are example file codes)
     const sampleVideos = [
       {
-        file_code: 'sample_code_1',
-        title: 'Sample Video 1 - Introduction',
-        duration: '5:30'
+        file_code: "sample_code_1",
+        embed_code: "sample_code_1",
+        title: "Sample Video 1 - Introduction",
+        duration: "5:30",
+        thumbnail: "https://via.placeholder.com/320x180/1a1a1a/ffffff?text=Sample+1",
       },
       {
-        file_code: 'sample_code_2',
-        title: 'Sample Video 2 - Tutorial',
-        duration: '12:45'
+        file_code: "sample_code_2",
+        embed_code: "sample_code_2",
+        title: "Sample Video 2 - Tutorial",
+        duration: "12:45",
+        thumbnail: "https://via.placeholder.com/320x180/1a1a1a/ffffff?text=Sample+2",
       },
       {
-        file_code: 'sample_code_3',
-        title: 'Sample Video 3 - Advanced Concepts',
-        duration: '8:20'
-      }
+        file_code: "sample_code_3",
+        embed_code: "sample_code_3",
+        title: "Sample Video 3 - Advanced Concepts",
+        duration: "8:20",
+        thumbnail: "https://via.placeholder.com/320x180/1a1a1a/ffffff?text=Sample+3",
+      },
     ];
 
-    sampleVideos.forEach(video => this.addVideo(video));
+    sampleVideos.forEach((video) => this.addVideo(video));
   }
 }
 

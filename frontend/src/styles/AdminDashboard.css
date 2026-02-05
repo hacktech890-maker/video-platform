@@ -1,0 +1,265 @@
+.admin-container {
+  min-height: 80vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 16px;
+}
+
+.admin-card {
+  width: 100%;
+  max-width: 420px;
+  background: #1a1a1a;
+  border: 1px solid #272727;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+}
+
+.admin-card h2 {
+  color: white;
+  margin-bottom: 12px;
+}
+
+.admin-card p {
+  color: #aaa;
+  margin-bottom: 20px;
+}
+
+.admin-card input {
+  width: 100%;
+  padding: 12px;
+  background: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: white;
+  margin-bottom: 14px;
+}
+
+.admin-btn-primary,
+.admin-btn-secondary,
+.admin-btn-danger {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  margin-top: 10px;
+  transition: 0.2s;
+}
+
+.admin-btn-primary {
+  background: #ff0000;
+  color: white;
+}
+
+.admin-btn-primary:hover {
+  background: #cc0000;
+}
+
+.admin-btn-secondary {
+  background: #272727;
+  color: white;
+}
+
+.admin-btn-secondary:hover {
+  background: #3a3a3a;
+}
+
+.admin-btn-danger {
+  background: rgba(255, 0, 0, 0.15);
+  border: 1px solid rgba(255, 0, 0, 0.4);
+  color: #ff6b6b;
+}
+
+.admin-btn-danger:hover {
+  background: rgba(255, 0, 0, 0.25);
+}
+
+.admin-dashboard-page {
+  padding: 30px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.admin-dashboard-header h1 {
+  font-size: 26px;
+  font-weight: 800;
+  color: white;
+}
+
+.admin-dashboard-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-stats-grid {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.stat-box {
+  flex: 1;
+  min-width: 220px;
+  background: #1a1a1a;
+  border: 1px solid #272727;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.stat-box h3 {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+
+.stat-box p {
+  font-size: 28px;
+  font-weight: 800;
+  color: white;
+}
+
+.admin-search-box {
+  margin-bottom: 18px;
+}
+
+.admin-search-box input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #0f0f0f;
+  color: white;
+  font-size: 15px;
+}
+
+.admin-video-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-video-row {
+  display: flex;
+  gap: 16px;
+  background: #1a1a1a;
+  border: 1px solid #272727;
+  border-radius: 12px;
+  padding: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-video-thumb img {
+  width: 160px;
+  height: 90px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #000;
+}
+
+.admin-video-info {
+  flex: 1;
+  min-width: 250px;
+}
+
+.admin-video-info h3 {
+  font-size: 18px;
+  color: white;
+  margin-bottom: 6px;
+}
+
+.admin-video-info p {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+
+.small-text {
+  font-size: 12px;
+  color: #666;
+}
+
+.admin-video-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.empty-text {
+  color: #888;
+  font-size: 16px;
+  text-align: center;
+  padding: 40px;
+}
+
+/* ALERTS */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.alert-error {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+}
+
+/* LOADING */
+.loading-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 30px;
+}
+
+.loading-spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #ff0000;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-dashboard-page {
+    padding: 20px 14px;
+  }
+
+  .admin-video-thumb img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16/9;
+  }
+
+  .admin-video-actions {
+    width: 100%;
+    flex-direction: row;
+  }
+}

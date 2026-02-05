@@ -78,6 +78,92 @@
   gap: 24px;
 }
 
+/* ========================= */
+/* ✅ ADMIN BAR STYLES */
+/* ========================= */
+
+.admin-bar {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #272727;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.admin-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-password-input {
+  background: #0f0f0f;
+  border: 1px solid #333;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 220px;
+  transition: border-color 0.25s ease;
+}
+
+.admin-password-input:focus {
+  outline: none;
+  border-color: #ff0000;
+}
+
+.admin-btn {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.admin-btn.login {
+  background: #ff0000;
+  color: white;
+}
+
+.admin-btn.login:hover {
+  background: #cc0000;
+}
+
+.admin-btn.logout {
+  background: #272727;
+  color: white;
+  border: 1px solid #333;
+}
+
+.admin-btn.logout:hover {
+  background: #3a3a3a;
+}
+
+.admin-status {
+  font-size: 13px;
+  font-weight: 700;
+  color: #51cf66;
+  background: rgba(81, 207, 102, 0.1);
+  border: 1px solid rgba(81, 207, 102, 0.25);
+  padding: 8px 12px;
+  border-radius: 20px;
+}
+
 /* LOADING, ERROR, EMPTY STATES */
 .loading-container,
 .error-container,
@@ -143,7 +229,7 @@
   .ad-sidebar-left {
     display: none;
   }
-  
+
   .videos-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
@@ -155,18 +241,33 @@
   .home-page-layout {
     padding: 20px;
   }
-  
+
   .ad-sidebar {
     display: none;
   }
-  
+
   .home-content-main {
     order: 1;
   }
-  
+
   .videos-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
+  }
+
+  .admin-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-right {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-password-input {
+    width: 100%;
   }
 }
 

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import videoService from '../services/videoService';
-import '../styles/Watch.css';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import videoService from "../services/videoService";
+import "../styles/Watch.css";
 
 const Watch = () => {
   const { id } = useParams();
@@ -10,6 +10,22 @@ const Watch = () => {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Admin session
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+
+  // Delete state
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    // Load admin session from localStorage
+    const savedPassword = localStorage.getItem("adminPassword");
+    if (savedPassword) {
+      setAdminPassword(savedPassword);
+      setIsAdmin(true);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -52,6 +68,61 @@ const Watch = () => {
     });
   };
 
+  // Admin Login
+  const handleAdminLogin = async () => {
+    if (!adminPassword.trim()) {
+      alert("Enter admin password!");
+      return;
+    }
+
+    try {
+      await videoService.verifyAdmin(adminPassword);
+
+      localStorage.setItem("adminPassword", adminPassword);
+      setIsAdmin(true);
+
+      alert("Admin login successful ✅");
+    } catch (err) {
+      console.error("Admin login failed:", err);
+      alert("Wrong password ❌");
+    }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem("adminPassword");
+    setAdminPassword("");
+    setIsAdmin(false);
+    alert("Logged out ✅");
+  };
+
+  // Admin Delete
+  const handleDeleteVideo = async () => {
+    if (!isAdmin) {
+      alert("Admin login required!");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this video? This cannot be undone!"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setDeleting(true);
+
+      await videoService.deleteVideo(video.id, adminPassword);
+
+      alert("Video deleted successfully ✅");
+      navigate("/");
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert(err.response?.data?.message || "Failed to delete video ❌");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="watch-container">
@@ -76,7 +147,8 @@ const Watch = () => {
     );
   }
 
-const embedUrl = `https://short.icu/${video.embed_code || video.file_code}`;
+  // Embed URL fallback
+  const embedUrl = `https://short.icu/${video.embed_code || video.file_code}`;
 
   return (
     <div className="watch-page-layout">
@@ -108,6 +180,40 @@ const embedUrl = `https://short.icu/${video.embed_code || video.file_code}`;
             <p>
               <b>Duration:</b> {video.duration || "0:00"}
             </p>
+          </div>
+
+          {/* ✅ ADMIN DELETE BUTTON */}
+          <div className="watch-admin-actions">
+            {isAdmin ? (
+              <>
+                <span className="admin-status-text">✅ Admin Mode</span>
+                <button
+                  className="delete-video-btn"
+                  onClick={handleDeleteVideo}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting..." : "🗑 Delete Video"}
+                </button>
+
+                <button
+                  className="logout-video-btn"
+                  onClick={handleAdminLogout}
+                  disabled={deleting}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <div className="admin-login-box">
+                <input
+                  type="password"
+                  placeholder="Admin Password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                />
+                <button onClick={handleAdminLogin}>Login</button>
+              </div>
+            )}
           </div>
         </div>
 

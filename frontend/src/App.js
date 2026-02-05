@@ -1,28 +1,26 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Header from './components/Header';
-import Home from './pages/Home';
-import Watch from './pages/Watch';
-import Upload from './pages/Upload';
-import './styles/App.css';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
-// ✅ Protect Upload Route
-const ProtectedUploadRoute = ({ children }) => {
-  const location = useLocation();
-  const params = new URLSearchParams(location.search);
+import Header from "./components/Header";
+import Home from "./pages/Home";
+import Watch from "./pages/Watch";
+import Upload from "./pages/Upload";
 
-  const key = params.get("key");
+// (we will create this later)
+import AdminDashboard from "./pages/AdminDashboard";
 
-  // ✅ Your admin key stored in Netlify env variable
-  const ADMIN_KEY = process.env.REACT_APP_ADMIN_KEY;
+import "./styles/App.css";
 
-  if (!ADMIN_KEY) {
-    console.error("⚠️ REACT_APP_ADMIN_KEY is missing in Netlify Environment Variables!");
-    return <Navigate to="/" replace />;
-  }
+// ✅ Protect Admin Routes (Upload + Dashboard)
+const ProtectedAdminRoute = ({ children }) => {
+  const savedPassword = localStorage.getItem("adminPassword");
 
-  // If key doesn't match, redirect to home
-  if (key !== ADMIN_KEY) {
+  if (!savedPassword) {
     return <Navigate to="/" replace />;
   }
 
@@ -34,20 +32,33 @@ function App() {
     <Router>
       <div className="app">
         <Header />
+
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/watch/:id" element={<Watch />} />
 
-            {/* ✅ Protected Upload Page */}
+            {/* ✅ ADMIN ROUTES */}
             <Route
               path="/upload"
               element={
-                <ProtectedUploadRoute>
+                <ProtectedAdminRoute>
                   <Upload />
-                </ProtectedUploadRoute>
+                </ProtectedAdminRoute>
               }
             />
+
+            <Route
+              path="/admin"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminDashboard />
+                </ProtectedAdminRoute>
+              }
+            />
+
+            {/* fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>

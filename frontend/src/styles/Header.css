@@ -32,13 +32,13 @@
 
 .logo h1 {
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 800;
   color: #ffffff;
 }
 
 .nav-links {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
 }
 
@@ -46,25 +46,48 @@
   background: transparent;
   color: #ffffff;
   border: none;
-  padding: 10px 20px;
+  padding: 10px 18px;
   border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.25s ease;
 }
 
 .nav-button:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.upload-btn {
+/* Upload button look */
+.nav-button:nth-child(2) {
   background: #ff0000;
   color: white;
 }
 
-.upload-btn:hover {
+.nav-button:nth-child(2):hover {
   background: #cc0000;
+}
+
+/* Dashboard button */
+.admin-btn {
+  background: rgba(0, 140, 255, 0.15);
+  border: 1px solid rgba(0, 140, 255, 0.35);
+  color: #4dabf7;
+}
+
+.admin-btn:hover {
+  background: rgba(0, 140, 255, 0.25);
+}
+
+/* Logout button */
+.logout-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* Responsive */
@@ -78,7 +101,17 @@
   }
 
   .nav-button {
-    padding: 8px 16px;
-    font-size: 14px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .nav-links {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .logo h1 {
+    display: none;
   }
 }

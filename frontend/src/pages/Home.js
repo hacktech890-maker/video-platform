@@ -1,19 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import VideoCard from '../components/VideoCard';
-import videoService from '../services/videoService';
-import '../styles/Home.css';
+import React, { useState, useEffect } from "react";
+import VideoCard from "../components/VideoCard";
+import videoService from "../services/videoService";
+import "../styles/Home.css";
 
 const Home = () => {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Admin session
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+
+  // Delete state
+  const [deletingId, setDeletingId] = useState(null);
+
   useEffect(() => {
     fetchVideos();
-    
+
+    // Load admin session from localStorage
+    const savedPassword = localStorage.getItem("adminPassword");
+    if (savedPassword) {
+      setAdminPassword(savedPassword);
+      setIsAdmin(true);
+    }
+
     // Load your ad script
-    const script = document.createElement('script');
-    script.src = 'https://pl28635101.effectivegatecpm.com/ae/10/47/ae1047454b116c143b22ba661108cf77.js';
+    const script = document.createElement("script");
+    script.src =
+      "https://pl28635101.effectivegatecpm.com/ae/10/47/ae1047454b116c143b22ba661108cf77.js";
     script.async = true;
     document.body.appendChild(script);
   }, []);
@@ -25,10 +40,66 @@ const Home = () => {
       setVideos(response.videos || []);
       setError(null);
     } catch (err) {
-      console.error('Error fetching videos:', err);
-      setError('Failed to load videos. Please try again later.');
+      console.error("Error fetching videos:", err);
+      setError("Failed to load videos. Please try again later.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Admin Login
+  const handleAdminLogin = async () => {
+    if (!adminPassword.trim()) {
+      alert("Enter admin password!");
+      return;
+    }
+
+    try {
+      await videoService.verifyAdmin(adminPassword);
+
+      localStorage.setItem("adminPassword", adminPassword);
+      setIsAdmin(true);
+
+      alert("Admin login successful ✅");
+    } catch (err) {
+      console.error("Admin login failed:", err);
+      alert("Wrong password ❌");
+    }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem("adminPassword");
+    setAdminPassword("");
+    setIsAdmin(false);
+    alert("Logged out ✅");
+  };
+
+  // Delete video
+  const handleDeleteVideo = async (videoId) => {
+    if (!isAdmin) {
+      alert("Admin login required!");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this video? This cannot be undone!"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setDeletingId(videoId);
+
+      await videoService.deleteVideo(videoId, adminPassword);
+
+      setVideos((prev) => prev.filter((v) => v.id !== videoId));
+
+      alert("Video deleted successfully ✅");
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert(err.response?.data?.message || "Failed to delete video ❌");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -74,6 +145,40 @@ const Home = () => {
           </svg>
           <h2>No videos yet</h2>
           <p>Upload your first video to get started!</p>
+
+          {/* ADMIN LOGIN SECTION */}
+          <div style={{ marginTop: "20px" }}>
+            <h3 style={{ color: "#fff" }}>Admin Login</h3>
+            <input
+              type="password"
+              placeholder="Enter admin password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              style={{
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #333",
+                background: "#222",
+                color: "#fff",
+                marginTop: "10px",
+              }}
+            />
+            <button
+              onClick={handleAdminLogin}
+              style={{
+                marginLeft: "10px",
+                padding: "10px 16px",
+                borderRadius: "6px",
+                border: "none",
+                background: "red",
+                color: "white",
+                fontWeight: "bold",
+                cursor: "pointer",
+              }}
+            >
+              Login
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -86,15 +191,8 @@ const Home = () => {
         <div className="ad-sticky">
           <div className="ad-container">
             <div className="ad-label">Advertisement</div>
-            {/* 
-              PASTE YOUR AD CODE HERE 
-              Examples:
-              - Google AdSense
-              - Affiliate banners
-              - Custom ad network code
-            */}
+
             <div className="ad-placeholder">
-              {/* Replace this div with actual ad code */}
               <p>300x600 Ad Space</p>
             </div>
           </div>
@@ -103,9 +201,46 @@ const Home = () => {
 
       {/* MAIN CONTENT */}
       <main className="home-content-main">
+        {/* ADMIN BAR */}
+        <div className="admin-bar">
+          <div className="admin-left">
+            <h2 className="home-title">Videos</h2>
+          </div>
+
+          <div className="admin-right">
+            {isAdmin ? (
+              <>
+                <span className="admin-status">✅ Admin Mode</span>
+                <button className="admin-btn logout" onClick={handleAdminLogout}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <input
+                  type="password"
+                  placeholder="Admin Password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="admin-password-input"
+                />
+                <button className="admin-btn login" onClick={handleAdminLogin}>
+                  Login
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
         <div className="videos-grid">
           {videos.map((video) => (
-            <VideoCard key={video.id} video={video} />
+            <VideoCard
+              key={video.id}
+              video={video}
+              isAdmin={isAdmin}
+              onDelete={handleDeleteVideo}
+              deleting={deletingId === video.id}
+            />
           ))}
         </div>
       </main>
@@ -115,15 +250,8 @@ const Home = () => {
         <div className="ad-sticky">
           <div className="ad-container">
             <div className="ad-label">Advertisement</div>
-            {/* 
-              PASTE YOUR AD CODE HERE 
-              Examples:
-              - Google AdSense
-              - Affiliate banners
-              - Custom ad network code
-            */}
+
             <div className="ad-placeholder">
-              {/* Replace this div with actual ad code */}
               <p>300x600 Ad Space</p>
             </div>
           </div>
