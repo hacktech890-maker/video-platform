@@ -47,6 +47,5 @@ const videoSchema = new mongoose.Schema(
   }
 );
 
-videoSchema.index({ file_code: 1 }, { unique: true });
 
 module.exports = mongoose.model("Video", videoSchema);
