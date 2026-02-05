@@ -1,25 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Header.css";
 
 const Header = () => {
   const navigate = useNavigate();
 
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const savedPassword = localStorage.getItem("adminPassword");
-    if (savedPassword) {
-      setIsAdmin(true);
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("adminPassword");
-    setIsAdmin(false);
-    alert("Logged out ✅");
-    navigate("/");
-  };
+  // IMPORTANT:
+  // We do NOT show any admin buttons in header.
+  // Admin system is hidden at /upload/admin
 
   return (
     <header className="header">
@@ -44,26 +32,6 @@ const Header = () => {
           <button onClick={() => navigate("/")} className="nav-button">
             Home
           </button>
-
-          {/* ✅ ADMIN ONLY */}
-          {isAdmin && (
-            <>
-              <button onClick={() => navigate("/upload")} className="nav-button">
-                Upload
-              </button>
-
-              <button
-                onClick={() => navigate("/admin")}
-                className="nav-button admin-btn"
-              >
-                Dashboard
-              </button>
-
-              <button onClick={handleLogout} className="nav-button logout-btn">
-                Logout
-              </button>
-            </>
-          )}
         </nav>
       </div>
     </header>

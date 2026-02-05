@@ -11,12 +11,11 @@ import Home from "./pages/Home";
 import Watch from "./pages/Watch";
 import Upload from "./pages/Upload";
 
-// (we will create this later)
 import AdminDashboard from "./pages/AdminDashboard";
 
 import "./styles/App.css";
 
-// ✅ Protect Admin Routes (Upload + Dashboard)
+// ✅ Protect Admin Routes (Admin Panel + Upload)
 const ProtectedAdminRoute = ({ children }) => {
   const savedPassword = localStorage.getItem("adminPassword");
 
@@ -38,21 +37,26 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/watch/:id" element={<Watch />} />
 
-            {/* ✅ ADMIN ROUTES */}
+            {/* ✅ HIDDEN ADMIN ROUTES */}
+            {/* Login page is NOT protected so you can login */}
+            <Route path="/upload/admin" element={<AdminDashboard />} />
+
+            {/* Admin panel is protected */}
             <Route
-              path="/upload"
+              path="/upload/admin/panel"
               element={
                 <ProtectedAdminRoute>
-                  <Upload />
+                  <AdminDashboard />
                 </ProtectedAdminRoute>
               }
             />
 
+            {/* Bulk upload page is protected */}
             <Route
-              path="/admin"
+              path="/upload/admin/bulk-upload"
               element={
                 <ProtectedAdminRoute>
-                  <AdminDashboard />
+                  <Upload />
                 </ProtectedAdminRoute>
               }
             />

@@ -5,13 +5,32 @@ const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 const cloudinary = require("./cloudinaryConfig");
 const abyssService = require("./abyssService");
-const db = require("./database");
+const Video = require("./models/Video");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// ==================== MONGODB CONNECTION ====================
+
+async function connectMongoDB() {
+  try {
+    if (!process.env.MONGODB_URI) {
+      console.error("❌ MONGODB_URI is missing in environment variables");
+      process.exit(1);
+    }
+
+    await mongoose.connect(process.env.MONGODB_URI);
+
+    console.log("✅ MongoDB connected successfully");
+  } catch (err) {
+    console.error("❌ MongoDB connection failed:", err.message);
+    process.exit(1);
+  }
+}
 
 // ==================== ADMIN SECURITY ====================
 
@@ -30,7 +49,6 @@ function requireAdmin(req, res, next) {
 
 // ==================== CORS CONFIG ====================
 
-// PRODUCTION CORS - Allow multiple origins
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
   : ["http://localhost:3000"];
@@ -40,12 +58,10 @@ app.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
 
-      // Allow exact allowed origins
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // Allow ALL Netlify preview deploy URLs
       if (origin.endsWith(".netlify.app")) {
         return callback(null, true);
       }
@@ -65,10 +81,9 @@ app.use(express.urlencoded({ extended: true }));
 const upload = multer({
   dest: "uploads/",
   limits: {
-    fileSize: 10 * 1024 * 1024 * 1024, // 10GB limit (Abyss.to maxUploadSize)
+    fileSize: 10 * 1024 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    // VIDEO FILE CHECK
     if (file.fieldname === "video") {
       const allowedTypes = /mp4|avi|mkv|mov|wmv|flv|webm|mpeg|mpg|m4v/;
       const extname = allowedTypes.test(
@@ -81,16 +96,12 @@ const upload = multer({
       } else {
         return cb(new Error("Only video files are allowed for video field!"));
       }
-    }
-
-    // THUMBNAIL FILE CHECK
-    else if (file.fieldname === "thumbnail") {
+    } else if (file.fieldname === "thumbnail") {
       const allowedTypes = /jpeg|jpg|png|webp/;
       const extname = allowedTypes.test(
         path.extname(file.originalname).toLowerCase()
       );
 
-      // Some browsers send thumbnail as octet-stream
       const mimetype =
         file.mimetype.startsWith("image/") ||
         file.mimetype === "application/octet-stream";
@@ -100,16 +111,12 @@ const upload = multer({
       } else {
         return cb(new Error("Only image files are allowed for thumbnail!"));
       }
-    }
-
-    // OTHER FIELDS
-    else {
+    } else {
       return cb(null, true);
     }
   },
 });
 
-// Ensure uploads directory exists
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
   console.log("Created uploads directory (ephemeral - Render free tier)");
@@ -148,78 +155,95 @@ app.post("/api/admin/verify", requireAdmin, (req, res) => {
 
 // Admin stats
 app.get("/api/admin/stats", requireAdmin, (req, res) => {
-  try {
-    const videos = db.getAllVideos();
-    const totalViews = videos.reduce((sum, v) => sum + (v.views || 0), 0);
+  (async () => {
+    try {
+      const totalVideos = await Video.countDocuments();
 
-    return res.json({
-      success: true,
-      stats: {
-        totalVideos: videos.length,
-        totalViews: totalViews,
-      },
-    });
-  } catch (error) {
-    console.error("Admin stats error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to load admin stats",
-      error: error.message,
-    });
-  }
+      const viewsAgg = await Video.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalViews: { $sum: "$views" },
+          },
+        },
+      ]);
+
+      const totalViews = viewsAgg?.[0]?.totalViews || 0;
+
+      return res.json({
+        success: true,
+        stats: {
+          totalVideos,
+          totalViews,
+        },
+      });
+    } catch (error) {
+      console.error("Admin stats error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load admin stats",
+        error: error.message,
+      });
+    }
+  })();
 });
 
 // ==================== VIDEO ROUTES ====================
 
-// GET /api/videos - Get all videos
+// GET all videos (newest first)
 app.get("/api/videos", (req, res) => {
-  try {
-    const videos = db.getAllVideos();
-    res.json({
-      success: true,
-      count: videos.length,
-      videos: videos,
-    });
-  } catch (error) {
-    console.error("Error fetching videos:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch videos",
-      error: error.message,
-    });
-  }
-});
+  (async () => {
+    try {
+      const videos = await Video.find().sort({ upload_date: -1, createdAt: -1 });
 
-// GET /api/videos/:id - Get single video by ID
-app.get("/api/videos/:id", (req, res) => {
-  try {
-    const video = db.getVideoById(req.params.id);
-
-    if (!video) {
-      return res.status(404).json({
+      res.json({
+        success: true,
+        count: videos.length,
+        videos: videos,
+      });
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+      res.status(500).json({
         success: false,
-        message: "Video not found",
+        message: "Failed to fetch videos",
+        error: error.message,
       });
     }
-
-    // Increment views
-    db.incrementViews(req.params.id);
-
-    res.json({
-      success: true,
-      video: video,
-    });
-  } catch (error) {
-    console.error("Error fetching video:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch video",
-      error: error.message,
-    });
-  }
+  })();
 });
 
-// POST /api/videos/upload - Upload video to Abyss.to (ADMIN ONLY)
+// GET video by MongoDB _id and increment views
+app.get("/api/videos/:id", (req, res) => {
+  (async () => {
+    try {
+      const video = await Video.findById(req.params.id);
+
+      if (!video) {
+        return res.status(404).json({
+          success: false,
+          message: "Video not found",
+        });
+      }
+
+      video.views = (video.views || 0) + 1;
+      await video.save();
+
+      res.json({
+        success: true,
+        video: video,
+      });
+    } catch (error) {
+      console.error("Error fetching video:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch video",
+        error: error.message,
+      });
+    }
+  })();
+});
+
+// Upload video to Abyss + thumbnail to Cloudinary (ADMIN ONLY)
 app.post(
   "/api/videos/upload",
   requireAdmin,
@@ -252,7 +276,6 @@ app.post(
 
       console.log("Uploading video to Abyss.to:", videoFile.originalname);
 
-      // Upload video to Abyss.to
       const uploadResult = await abyssService.uploadVideo(
         videoFile.path,
         videoFile.originalname
@@ -260,10 +283,7 @@ app.post(
 
       console.log("Upload successful:", uploadResult);
 
-      // Default thumbnail from Abyss (fallback)
       let thumbnailUrl = abyssService.getThumbnailUrl(uploadResult.file_id);
-
-      // ==================== CLOUDINARY THUMBNAIL UPLOAD ====================
 
       if (thumbnailFile) {
         console.log("Uploading thumbnail to Cloudinary...");
@@ -281,8 +301,6 @@ app.post(
         thumbnailUrl = uploadThumb.secure_url;
       }
 
-      // ==================== EMBED CODE FIX ====================
-
       let embedUrl =
         uploadResult.embed_url ||
         uploadResult.url ||
@@ -292,27 +310,24 @@ app.post(
 
       let embedCode = null;
 
-      // Extract code from short.icu URL
       if (embedUrl && embedUrl.includes("short.icu/")) {
         embedCode = embedUrl.split("short.icu/")[1].trim();
       }
 
-      // If no embedCode found, fallback to file_id
       if (!embedCode) {
         embedCode = uploadResult.file_id;
       }
 
-      // Save to database
-      const video = db.addVideo({
+      const video = await Video.create({
         file_code: uploadResult.file_id,
         embed_code: embedCode,
         title: title,
         thumbnail: thumbnailUrl,
         duration: duration || "0:00",
         status: uploadResult.status || "processing",
+        upload_date: new Date(),
+        views: 0,
       });
-
-      // ==================== CLEAN UP LOCAL FILES ====================
 
       fs.unlinkSync(videoFile.path);
 
@@ -328,7 +343,6 @@ app.post(
     } catch (error) {
       console.error("Error uploading video:", error);
 
-      // Clean up files if they exist
       if (req.files) {
         if (req.files.video && fs.existsSync(req.files.video[0].path)) {
           fs.unlinkSync(req.files.video[0].path);
@@ -347,7 +361,7 @@ app.post(
   }
 );
 
-// POST /api/videos/add - Add existing Abyss.to video by file ID (ADMIN ONLY)
+// Add existing file_code (ADMIN ONLY)
 app.post("/api/videos/add", requireAdmin, async (req, res) => {
   try {
     const { file_code, title, duration } = req.body;
@@ -359,8 +373,7 @@ app.post("/api/videos/add", requireAdmin, async (req, res) => {
       });
     }
 
-    // Check if video already exists
-    const existingVideo = db.getVideoByFileCode(file_code);
+    const existingVideo = await Video.findOne({ file_code: file_code.trim() });
     if (existingVideo) {
       return res.status(400).json({
         success: false,
@@ -368,7 +381,6 @@ app.post("/api/videos/add", requireAdmin, async (req, res) => {
       });
     }
 
-    // Verify file exists on Abyss.to
     try {
       const fileInfo = await abyssService.getFileInfo(file_code);
       console.log("File verified on Abyss.to:", fileInfo);
@@ -376,13 +388,15 @@ app.post("/api/videos/add", requireAdmin, async (req, res) => {
       console.warn("Could not verify file on Abyss.to:", error.message);
     }
 
-    // Save to database
-    const video = db.addVideo({
-      file_code: file_code,
-      embed_code: file_code,
-      title: title,
-      thumbnail: abyssService.getThumbnailUrl(file_code),
+    const video = await Video.create({
+      file_code: file_code.trim(),
+      embed_code: file_code.trim(),
+      title: title.trim(),
+      thumbnail: abyssService.getThumbnailUrl(file_code.trim()),
       duration: duration || "0:00",
+      upload_date: new Date(),
+      views: 0,
+      status: "active",
     });
 
     res.json({
@@ -400,10 +414,10 @@ app.post("/api/videos/add", requireAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/videos/:id - Delete video (ADMIN ONLY)
+// Delete video (ADMIN ONLY)
 app.delete("/api/videos/:id", requireAdmin, async (req, res) => {
   try {
-    const video = db.getVideoById(req.params.id);
+    const video = await Video.findById(req.params.id);
 
     if (!video) {
       return res.status(404).json({
@@ -412,7 +426,7 @@ app.delete("/api/videos/:id", requireAdmin, async (req, res) => {
       });
     }
 
-    db.deleteVideo(req.params.id);
+    await Video.deleteOne({ _id: req.params.id });
 
     res.json({
       success: true,
@@ -428,32 +442,34 @@ app.delete("/api/videos/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/videos/:id/embed - Get embed URL
+// Embed url endpoint
 app.get("/api/videos/:id/embed", (req, res) => {
-  try {
-    const video = db.getVideoById(req.params.id);
+  (async () => {
+    try {
+      const video = await Video.findById(req.params.id);
 
-    if (!video) {
-      return res.status(404).json({
+      if (!video) {
+        return res.status(404).json({
+          success: false,
+          message: "Video not found",
+        });
+      }
+
+      const embedUrl = `https://short.icu/${video.embed_code || video.file_code}`;
+
+      res.json({
+        success: true,
+        embed_url: embedUrl,
+      });
+    } catch (error) {
+      console.error("Error getting embed URL:", error);
+      res.status(500).json({
         success: false,
-        message: "Video not found",
+        message: "Failed to get embed URL",
+        error: error.message,
       });
     }
-
-    const embedUrl = `https://short.icu/${video.embed_code || video.file_code}`;
-
-    res.json({
-      success: true,
-      embed_url: embedUrl,
-    });
-  } catch (error) {
-    console.error("Error getting embed URL:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get embed URL",
-      error: error.message,
-    });
-  }
+  })();
 });
 
 // ==================== ERROR HANDLING ====================
@@ -470,32 +486,29 @@ app.use((err, req, res, next) => {
 
 // ==================== START SERVER ====================
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`Video hosting: Abyss.to`);
-  console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
+connectMongoDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log(`Video hosting: Abyss.to`);
+    console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
 
-  if (!process.env.ABYSS_API_KEY) {
-    console.error("⚠️ WARNING: ABYSS_API_KEY not set! Video uploads will fail.");
-  }
+    if (!process.env.ABYSS_API_KEY) {
+      console.error("⚠️ WARNING: ABYSS_API_KEY not set! Video uploads will fail.");
+    }
 
-  if (!process.env.CLOUDINARY_CLOUD_NAME) {
-    console.error("⚠️ WARNING: CLOUDINARY ENV VARIABLES NOT SET!");
-  }
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+      console.error("⚠️ WARNING: CLOUDINARY ENV VARIABLES NOT SET!");
+    }
 
-  if (!process.env.ADMIN_PASSWORD) {
-    console.error("⚠️ WARNING: ADMIN_PASSWORD not set! Upload will always fail.");
-  }
+    if (!process.env.ADMIN_PASSWORD) {
+      console.error("⚠️ WARNING: ADMIN_PASSWORD not set! Upload will always fail.");
+    }
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log("Seeding database with sample data...");
-    db.seedData();
-    console.log(`Sample videos added: ${db.getAllVideos().length}`);
-  } else {
-    console.log("Production mode - no sample data seeded");
-    console.log("Note: Using ephemeral in-memory storage (data resets on restart)");
-  }
+    if (!process.env.MONGODB_URI) {
+      console.error("⚠️ WARNING: MONGODB_URI not set! Database will fail.");
+    }
+  });
 });
 
 module.exports = app;
